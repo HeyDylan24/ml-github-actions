@@ -1,0 +1,41 @@
+
+name: ML Project Continuous Integration
+
+on:
+push:
+branches: [main]
+pull_request:
+branches: [main]
+
+jobs:
+test:
+runs-on: ubuntu-latest
+
+steps:
+- name: Checkout repository
+uses: actions/checkout@v4
+
+- name: Set up Python
+uses: actions/setup-python@v5
+with:
+python-version: &quot;3.12&quot;
+
+- name: Install dependencies
+run: |
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+- name: Train ML model
+
+run: python train.py
+
+- name: Run automated tests
+run: python -m pytest -v
+Page 1 of 15Experiment: Implementing Continuous Integration with GitHub Actions for an MLProjectIn this experiment, we will create a simple Machine Learning project using Python andScikit-learn, push it to GitHub, and configure GitHub Actions to automatically test the MLcode whenever we push changes to the repository.The procedure is suitable for beginners using Visual Studio Code on Windows.1. AimTo implement a Continuous Integration (CI) pipeline using GitHub Actions to automatetesting of a Machine Learning project and demonstrate how CI can be extended to modeldeployment.2. What will we implement?Step 1: Write ML code in VS CodeTrain a Random Forest classifierStep 2: Push code to GitHubCommit and push changesStep 3: GitHub Actions starts automaticallyInstall dependencies and run testsTests pass - Green check markTests fail - Error details shownImportant distinction: Continuous Integration automatically builds and tests the code.Continuous Deployment adds a step that releases the tested application or model to adeployment environment. We will first implement CI and then discuss how to extend it todeployment.3. Software requirements Python 3.10 or later Visual Studio Code Git A GitHub account Python libraries: scikit-learn, joblib, and pytest4. Create the project folderOpen Visual Studio Code.1. Create a folder named ml-github-actions.2. Open the folder in VS Code.
+Page 2 of 153. Select Terminal → New Terminal.4. Execute the following commands in the terminal.python --versiongit --versionpython -m venv .venv.venv\Scripts\Activate.ps1python -m pip install --upgrade pippip install scikit-learn joblib pytestIf PowerShell blocks virtual environment activation, use Command Prompt in VS Code andrun:.venv\Scripts\activate.batCreate the following project structure:ml-github-actions/train.pytest_model.pyrequirements.txt.github/workflows/ci.yml.gitignore5. Create requirements.txtCreate a new file named requirements.txt and add:scikit-learnjoblibpytestThis file tells GitHub Actions which Python packages must be installed before running theproject.
+Page 3 of 156. Write the Machine Learning codeCreate train.py.We will use the Iris dataset and a Random Forest classifier to predict flower species.from sklearn.datasets import load_irisfrom sklearn.ensemble import RandomForestClassifierfrom sklearn.model_selection import train_test_splitfrom sklearn.metrics import accuracy_scoreimport joblibdef train_model():# Step 1: Load the datasetiris = load_iris()X = iris.datay = iris.target# Step 2: Split the datasetX_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2,random_state=42,stratify=y)# Step 3: Create the modelmodel = RandomForestClassifier(n_estimators=100,random_state=42)# Step 4: Train the modelmodel.fit(X_train, y_train)# Step 5: Make predictions
+Page 4 of 15predictions = model.predict(X_test)# Step 6: Calculate accuracyaccuracy = accuracy_score(y_test, predictions)return model, X_test, y_test, accuracyif __name__ == &quot;__main__&quot;:model, X_test, y_test, accuracy = train_model()# Save the trained modeljoblib.dump(model, &quot;model.pkl&quot;)print(&quot;Model training completed successfully.&quot;)print(f&quot;Test accuracy: {accuracy:.2%}&quot;)print(&quot;Model saved as model.pkl&quot;)What is a .pkl file?A .pkl file is a Pickle file in Python. It is used to save a Python object so that you can loadand reuse it later without creating it again from scratch.In your project, model.pkl stores the trained Random Forest Machine Learning model.Think of it this way: train.py — trains the model. model.pkl — stores the trained model. Later, you can load model.pkl and use it to make predictions on new data.Understand the codeFunction Purposeload_iris() Loads the flower datasettrain_test_split() Splits data into training and testing setsRandomForestClassifier() Creates the classification modelmodel.fit() Trains the modelmodel.predict() Predicts flower classesaccuracy_score() Calculates classification accuracyjoblib.dump() Saves the trained model
+Page 5 of 157. Write automated test casesCreate test_model.py.These tests check whether the model trains successfully, produces valid predictions, andachieves a minimum test accuracy.from sklearn.datasets import load_irisfrom sklearn.metrics import accuracy_scorefrom train import train_modeldef test_model_trains_successfully():model, X_test, y_test, accuracy = train_model()assert model is not Noneassert accuracy &gt;= 0.80def test_predictions_have_correct_length():model, X_test, y_test, accuracy = train_model()predictions = model.predict(X_test)assert len(predictions) == len(y_test)def test_predictions_are_valid_classes():model, X_test, y_test, accuracy = train_model()predictions = model.predict(X_test)valid_classes = set(load_iris().target)assert set(predictions).issubset(valid_classes)def test_accuracy_is_valid():model, X_test, y_test, accuracy = train_model()predictions = model.predict(X_test)actual_accuracy = accuracy_score(y_test, predictions)assert 0.0 &lt;= actual_accuracy &lt;= 1.0assert actual_accuracy &gt;= 0.80These are basic functional tests. They do not guarantee that the model will generalize well tonew real-world data, but they are useful for demonstrating automated testing.
+Page 6 of 158. Test the project locallyIn the VS Code terminal, run:python train.pyExpected output will be similar to:Model training completed successfully.Test accuracy: 9X.XX%Model saved as model.pklThe exact accuracy depends on the model and dataset; the output will show the actual result.Run automated testsIn the VS Code terminal, make sure you are inside your project folder:ml-github-actionsRun this command:python -m pytest -vYou should see output similar to this:test_model_trains_successfully PASSEDtest_predictions_have_correct_length PASSEDtest_predictions_are_valid_classes PASSEDtest_accuracy_is_valid PASSED4 passed9. Create the GitHub Actions workflowThis is the most important step in the experiment.Inside the project folder, create these directories and file: In VS code, Right click folder-&gt; click new folder -&gt; .github , again right click and create one more folder -&gt;workflows, then create new -&gt; file  ci.yml.github/workflows/ci.yml
+Page 7 of 15Make sure the filename is ci.yml, not ci.yml.txt.Add the following code to .github/workflows/ci.yml.name: ML Project Continuous Integrationon:push:branches: [main]pull_request:branches: [main]jobs:test:runs-on: ubuntu-lateststeps:- name: Checkout repositoryuses: actions/checkout@v4- name: Set up Pythonuses: actions/setup-python@v5with:python-version: &quot;3.12&quot;- name: Install dependenciesrun: |python -m pip install --upgrade pippip install -r requirements.txt- name: Train ML model
+Page 8 of 15run: python train.py- name: Run automated testsrun: python -m pytest -vExplanation of the workflowYAML instruction Purposename Names the workflowon: push Starts the workflow when code is pushed to mainpull_request Runs checks when a pull request targets mainruns-on: ubuntu-latest Uses a GitHub-hosted Ubuntu runneractions/checkout Downloads your repository into the runneractions/setup-python Installs the specified Python versionpip install Installs the project dependenciespython train.py Runs the ML training programpython -m pytest -v Executes the automated testsHow CI works: Whenever you push a change to the main branch, GitHub Actions starts afresh environment, installs Python dependencies, runs the training program, and executes thetests. If any command fails, the workflow is marked as failed.10. Create .gitignoreCreate a file named .gitignore in the project root..venv/__pycache__/.pytest_cache/*.pycmodel.pklThis prevents unnecessary local files, virtual environments, and generated model files frombeing uploaded to GitHub.

@@ -43,6 +43,6 @@ if __name__ == "__main__":
     # Save the trained model
     joblib.dump(model, "model.pkl")
     
-    print("Model training completed successfully c1 test.")
+    print("Model training completed successfully c2 test.")
     print(f"Test accuracy: {accuracy:.2%}")
     print("Model saved as model.pkl")
